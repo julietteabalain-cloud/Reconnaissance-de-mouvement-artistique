@@ -1,0 +1,30 @@
+# Deep Learning
+torch
+torchvision
+timm       #implémentation pour EfficentNet et MobileNet
+albumentations # Pour des augmentations plus poussées (Etape 2)
+
+# Vision et Traitement d'images
+opencv-python
+scikit-image
+scipy
+pywavelets #Pour les transformées en ondelettes
+pillow
+
+# Analyse de données
+numpy
+pandas
+scikit-learn
+umap-learn
+
+# Visualisation et Tracking
+matplotlib
+seaborn
+plotly #pour visualisation intéractive (option)
+tensorboard #visualiser les courbes de loss et d'accuracy en temps réel
+
+# Environnement et Utilitaires
+tqdm     #pour voir les barres de progression
+pyyaml   #pour les fichiers config
+jupyter
+notebook
