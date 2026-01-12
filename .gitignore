@@ -2,3 +2,5 @@
 data/*
 checkpoints/*
 .venv/*
+.vscode/*
+__pycache__/*

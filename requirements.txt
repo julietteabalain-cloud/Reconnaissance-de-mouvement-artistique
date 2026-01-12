@@ -28,3 +28,7 @@ tqdm     #pour voir les barres de progression
 pyyaml   #pour les fichiers config
 jupyter
 notebook
+
+# Pour télécharger le dataset
+
+datasets
