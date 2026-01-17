@@ -44,10 +44,6 @@ def load_df():
 
 def load_image(row, split="train", data_root=None):
     img_path = DATA_DIR / split / str(row["style"]) / row["filename"]
-
-    if not img_path.exists():
-        raise FileNotFoundError(f"Image non trouvée : {img_path}")
-
     return Image.open(img_path).convert("RGB")
 
 ################### EXPLORATION DES DONNEES ###################
@@ -64,3 +60,73 @@ def show_images_by_style(dataset, target_style, n=5):
             count += 1
             if count == n:
                 break
+
+def visualize_data(df):
+    sample = df.sample(9, random_state=42)
+
+    fig, axes = plt.subplots(3, 3, figsize=(8, 8))
+    for ax, (_, row) in zip(axes.flatten(), sample.iterrows()):
+        img = load_image(row, split="train")
+        ax.imshow(img)
+        ax.set_title(row["style_name"], fontsize=9)
+        ax.axis("off")
+
+    plt.tight_layout()
+    plt.show()
+
+def variability_inter_style(style, df, n):
+    sample = df[df["style_name"] == style].sample(n)
+    fig, axes = plt.subplots(3, 3, figsize=(8,8))
+    for ax, (_, row) in zip(axes.flatten(), sample.iterrows()):
+        ax.imshow(load_image(row))
+        ax.axis("off")
+    plt.suptitle(f"Variabilité intra-style : {style}")
+    plt.show()
+
+def variation_inter_style(df):
+    styles = df["style_name"].unique()[:4]
+    fig, axes = plt.subplots(len(styles), 4, figsize=(10,8))
+
+    for i, style in enumerate(styles):
+        samples = df[df["style_name"] == style].sample(4)
+        for j, (_, row) in enumerate(samples.iterrows()):
+            axes[i, j].imshow(load_image(row))
+            axes[i, j].axis("off")
+        axes[i,0].set_ylabel(style)
+
+    plt.show()
+
+def visualize_style_repartition(df):
+    plt.figure(figsize=(12,4))
+    df["style_name"].value_counts().plot.bar()
+    plt.title("Distribution des styles (train)")
+    plt.ylabel("Nombre d'images")
+    plt.show()
+
+def visualize_genre_repartition(df, number_of_genre):
+    df["genre_name"].value_counts().head(10)
+    plt.figure(figsize=(12,4))
+    df["genre_name"].value_counts().plot.bar()
+    plt.title("Distribution des genres")
+    plt.ylabel("Nombre d'images")
+    plt.show()
+
+def visualize_artist_repartition(df):
+    df["artist_name"].value_counts().head(10)
+    plt.figure(figsize=(12,4))
+    df["artist_name"].value_counts().plot.bar()
+    plt.title("Distribution des artistes")
+    plt.ylabel("Nombre d'images")
+    plt.show()
+
+def count_nb_artist_per_style(df):
+    artists_per_style = (
+    df
+    .groupby("style_name")["artist_name"]
+    .nunique()
+    .sort_values()
+    )
+
+    artists_per_style.plot.barh(figsize=(6,8))
+    plt.title("Nombre d'artistes par style")
+    plt.show()

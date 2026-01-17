@@ -1,3 +1,8 @@
+"""Script pour charger un sous-ensemble du dataset WikiArt et l'enregistrer sur Google Drive
+   Ne pas utiliser c'est le code utilisé dans Google Colab
+"""
+
+
 from pathlib import Path
 import csv
 from tqdm import tqdm
