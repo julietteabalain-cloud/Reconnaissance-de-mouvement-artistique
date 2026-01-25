@@ -29,6 +29,10 @@ def load_df_train_test_val():
     df_test["style_name"]  = df_test["style"].apply(lambda x: mapping["style"][x])
     df_test["artist_name"] = df_test["artist"].apply(lambda x: mapping["artist"][x])
     df_test["genre_name"]  = df_test["genre"].apply(lambda x: mapping["genre"][x])
+    
+    df_train["split"] = "train"
+    df_val["split"] = "val"
+    df_test["split"] = "test"
 
     return df_test, df_train, df_val
 
