@@ -3,6 +3,7 @@ import pandas as pd
 import json
 from pathlib import Path
 from PIL import Image
+import seaborn as sns
 
 # Racine du projet (deepl-projet/)
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -42,9 +43,10 @@ def load_df():
     df["genre_name"]  = df["genre"].apply(lambda x: mapping["genre"][x])
     return df
 
-def load_image(row, split="train", data_root=None):
-    img_path = DATA_DIR / split / str(row["style"]) / row["filename"]
+def load_image(row):
+    img_path = DATA_DIR / row["split"] / str(row["style"]) / row["filename"]
     return Image.open(img_path).convert("RGB")
+
 
 ################### EXPLORATION DES DONNEES ###################
 
@@ -61,18 +63,15 @@ def show_images_by_style(dataset, target_style, n=5):
             if count == n:
                 break
 
-def visualize_data(df):
-    sample = df.sample(9, random_state=42)
-
+def visualize_data(df, n=9):
+    sample = df.sample(n)
     fig, axes = plt.subplots(3, 3, figsize=(8, 8))
     for ax, (_, row) in zip(axes.flatten(), sample.iterrows()):
-        img = load_image(row, split="train")
-        ax.imshow(img)
+        ax.imshow(load_image(row))
         ax.set_title(row["style_name"], fontsize=9)
         ax.axis("off")
-
-    plt.tight_layout()
     plt.show()
+
 
 def variability_inter_style(style, df, n):
     sample = df[df["style_name"] == style].sample(n)
@@ -103,6 +102,8 @@ def visualize_style_repartition(df):
     plt.ylabel("Nombre d'images")
     plt.show()
 
+
+
 def visualize_genre_repartition(df, number_of_genre):
     df["genre_name"].value_counts().head(10)
     plt.figure(figsize=(12,4))
@@ -129,4 +130,120 @@ def count_nb_artist_per_style(df):
 
     artists_per_style.plot.barh(figsize=(6,8))
     plt.title("Nombre d'artistes par style")
+    plt.show()
+
+def count_nb_genre_per_style(df):
+    artists_per_style = (
+    df
+    .groupby("genre_name")["artist_name"]
+    .nunique()
+    .sort_values()
+    )
+
+    artists_per_style.plot.barh(figsize=(6,8))
+    plt.title("Nombre de genress par style")
+    plt.show()
+
+def repartition_genre_per_style(df):
+    ct = pd.crosstab(
+        df["style_name"],
+        df["genre_name"],
+        normalize="index"
+    )
+
+    plt.figure(figsize=(14, 8))
+    sns.heatmap(
+        ct,
+        cmap="viridis",
+        cbar_kws={"label": "Proportion"}
+    )
+
+    plt.title("Répartition des genres par style artistique")
+    plt.xlabel("Genre")
+    plt.ylabel("Style")
+    plt.tight_layout()
+    plt.show()
+
+def repartition_artist_per_style(df):
+    ct = pd.crosstab(
+        df["style_name"],
+        df["artist_name"],
+        normalize="index"
+    )
+
+    plt.figure(figsize=(14, 8))
+    sns.heatmap(
+        ct,
+        cmap="viridis",
+        cbar_kws={"label": "Proportion"}
+    )
+
+    plt.title("Répartition des artistes par style artistique")
+    plt.xlabel("Artiste")
+    plt.ylabel("Style")
+    plt.tight_layout()
+    plt.show()
+
+from scipy.spatial.distance import pdist, squareform
+
+
+def similarities_between_style_based_on_genre(df):
+    
+    ct = pd.crosstab(
+        df["style_name"],
+        df["genre_name"],
+        normalize="index"
+    )
+
+    dist_matrix = squareform(
+        pdist(ct.values, metric="euclidean")
+    )
+
+    dist_df = pd.DataFrame(
+        dist_matrix,
+        index=ct.index,
+        columns=ct.index
+    )
+
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(dist_df, cmap="viridis")
+    plt.title("Distance entre styles basée sur la distribution des genres")
+    plt.show()
+
+def styles_cluster_based_on_genre(df):
+    ct = pd.crosstab(
+        df["style_name"],
+        df["genre_name"],
+        normalize="index"
+    )
+    sns.clustermap(
+        ct,
+        cmap="viridis",
+        figsize=(12, 8),
+        metric="euclidean",
+        method="ward"
+    )
+    plt.suptitle("Clustering des styles basé sur la distribution des genres", y=1.02)
+    plt.show()
+
+def unknown_genre_per_style(df):
+    unknown_rate = (
+        df["genre_name"].str.lower().str.contains("unknown")
+        .groupby(df["style_name"])
+        .mean()
+    )
+
+    unknown_rate.sort_values(ascending=False).plot(kind="bar", figsize=(12,4))
+    plt.title("Proportion de genres inconnus par style")
+    plt.show()
+
+def unknown_artist_per_style(df):
+    unknown_rate = (
+        df["artist_name"].str.lower().str.contains("unknown")
+        .groupby(df["style_name"])
+        .mean()
+    )
+
+    unknown_rate.sort_values(ascending=False).plot(kind="bar", figsize=(12,4))
+    plt.title("Proportion d'artiste inconnus par style")
     plt.show()
