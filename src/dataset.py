@@ -247,3 +247,70 @@ def unknown_artist_per_style(df):
     unknown_rate.sort_values(ascending=False).plot(kind="bar", figsize=(12,4))
     plt.title("Proportion d'artiste inconnus par style")
     plt.show()
+
+
+def observe_common_artist(df_train, df_test, df_val):
+    # Listes d'artistes par split
+    train_artists = set(df_train["artist_name"])
+    val_artists = set(df_val["artist_name"])
+    test_artists = set(df_test["artist_name"])
+
+    # Artistes présents dans train ET test
+    overlap_train_test = train_artists & test_artists
+    overlap_train_val  = train_artists & val_artists
+    overlap_val_test   = val_artists & test_artists
+
+    print("Artistes communs train-test:", len(overlap_train_test))
+    print("Artistes communs train-val:", len(overlap_train_val))
+    print("Artistes communs val-test:", len(overlap_val_test))
+
+    overlaps = [len(overlap_train_test), len(overlap_train_val), len(overlap_val_test)]
+    labels = ["train-test", "train-val", "val-test"]
+
+    plt.bar(labels, overlaps)
+    plt.ylabel("Nb artistes communs")
+    plt.title("Fuite potentielle d'artistes entre splits")
+    plt.show()
+
+import random
+def split_artist(df, df_train, df_val, df_test):
+
+    random.seed(42)
+    MAX_PER_STYLE = 400
+    TRAIN_ARTIST_FRACTION = 0.6  # fraction d'artistes par style pour le train
+
+    train_rows, val_rows, test_rows = [], [], []
+
+    for style, group in df.groupby("style_name"):
+        artists = list(group["artist_name"].unique())
+        random.shuffle(artists)
+
+        n_train_artists = max(1, int(len(artists) * TRAIN_ARTIST_FRACTION))
+        train_artists = artists[:n_train_artists]
+        remaining_artists = artists[n_train_artists:]
+
+        # Sélection des images pour train, sans dépasser MAX_PER_STYLE
+        train_group = group[group["artist_name"].isin(train_artists)]
+        if len(train_group) > MAX_PER_STYLE:
+            train_group = train_group.sample(MAX_PER_STYLE, random_state=42)
+        
+        train_rows.append(train_group)
+
+        # Split restant en val/test (50/50)
+        remaining_group = group[group["artist_name"].isin(remaining_artists)]
+        n_val = len(remaining_group) // 2
+        val_rows.append(remaining_group.iloc[:n_val])
+        test_rows.append(remaining_group.iloc[n_val:])
+
+    # Concaténation finale
+    df_train = pd.concat(train_rows).reset_index(drop=True)
+    df_val   = pd.concat(val_rows).reset_index(drop=True)
+    df_test  = pd.concat(test_rows).reset_index(drop=True)
+
+    # Vérification
+    print("Artistes communs train-test:", len(set(df_train["artist_name"]) & set(df_test["artist_name"])))
+    print("Artistes communs train-val :", len(set(df_train["artist_name"]) & set(df_val["artist_name"])))
+
+    # Nombre d'images par split
+    print("Train :", len(df_train), "Val :", len(df_val), "Test :", len(df_test))
+    return df_train, df_val, df_test
