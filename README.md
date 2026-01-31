@@ -10,3 +10,6 @@ Le dataset n’est pas versionné sur Git.
    - data/val
    - data/test
    - *_metadata.csv
+
+
+mklink /D data "G:\Mon Drive\DeepLearning\WikiArt_Subset"
