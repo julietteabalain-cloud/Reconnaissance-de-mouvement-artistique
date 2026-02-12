@@ -17,7 +17,7 @@ class ArtDataset(Dataset):
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
 
-        img_path = os.path.join(self.image_root, row["filename"])
+        img_path = self.image_root / row["label"] / row["filename"]
 
         image = Image.open(img_path).convert("RGB")
 
