@@ -9,12 +9,12 @@ import seaborn as sns
 
 # Racine du projet (deepl-projet/)
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = PROJECT_ROOT / "data"
+# DATA_DIR = PROJECT_ROOT / "data"
 
 
 ################## ACCES AU DATASET #################
 
-def load_df_train_test_val():
+def load_df_train_test_val(DATA_DIR):
     df_train = pd.read_csv(DATA_DIR  / "train_metadata.csv")
     df_val   = pd.read_csv(DATA_DIR  / "val_metadata.csv")
     df_test  = pd.read_csv(DATA_DIR  / "test_metadata.csv")
@@ -38,8 +38,8 @@ def load_df_train_test_val():
 
     return df_test, df_train, df_val
 
-def load_df():
-    df_test, df_train, df_val = load_df_train_test_val()
+def load_df(DATA_DIR):
+    df_test, df_train, df_val = load_df_train_test_val(DATA_DIR)
     df = pd.concat([df_train, df_val, df_test], ignore_index=True)
     with open(DATA_DIR  / "label_mapping.json", "r", encoding="utf-8") as f:
         mapping = json.load(f)
@@ -49,7 +49,7 @@ def load_df():
     df["genre_name"]  = df["genre"].apply(lambda x: mapping["genre"][x])
     return df
 
-def load_image(row):
+def load_image(row, DATA_DIR):
     img_path = DATA_DIR / row["split"] / str(row["style"]) / row["filename"]
     return Image.open(img_path).convert("RGB")
 
@@ -69,33 +69,33 @@ def show_images_by_style(dataset, target_style, n=5):
             if count == n:
                 break
 
-def visualize_data(df, n=9):
+def visualize_data(df, DATA_DIR, n=9):
     sample = df.sample(n)
     fig, axes = plt.subplots(3, 3, figsize=(8, 8))
     for ax, (_, row) in zip(axes.flatten(), sample.iterrows()):
-        ax.imshow(load_image(row))
+        ax.imshow(load_image(row,DATA_DIR))
         ax.set_title(row["style_name"], fontsize=9)
         ax.axis("off")
     plt.show()
 
 
-def variability_inter_style(style, df, n):
+def variability_inter_style(style, df, n,DATA_DIR):
     sample = df[df["style_name"] == style].sample(n)
     fig, axes = plt.subplots(3, 3, figsize=(8,8))
     for ax, (_, row) in zip(axes.flatten(), sample.iterrows()):
-        ax.imshow(load_image(row))
+        ax.imshow(load_image(row,DATA_DIR))
         ax.axis("off")
     plt.suptitle(f"Variabilité intra-style : {style}")
     plt.show()
 
-def variation_inter_style(df):
+def variation_inter_style(df,DATA_DIR):
     styles = df["style_name"].unique()[:4]
     fig, axes = plt.subplots(len(styles), 4, figsize=(10,8))
 
     for i, style in enumerate(styles):
         samples = df[df["style_name"] == style].sample(4)
         for j, (_, row) in enumerate(samples.iterrows()):
-            axes[i, j].imshow(load_image(row))
+            axes[i, j].imshow(load_image(row,DATA_DIR))
             axes[i, j].axis("off")
         axes[i,0].set_ylabel(style)
 
