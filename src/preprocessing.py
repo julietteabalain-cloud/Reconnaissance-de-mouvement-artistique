@@ -1,3 +1,6 @@
+""" Fonction de preprocessing des données, à appliquer après le split en train/val/test pour avoir
+    un dataset correct . """
+
 def clean_dataset(df , df_train, df_val,  df_test):
     """
     Applique les choix VALIDÉS lors de l'EDA.
