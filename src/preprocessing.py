@@ -1,6 +1,8 @@
 """ Fonction de preprocessing des données, à appliquer après le split en train/val/test pour avoir
     un dataset correct . """
 
+from sklearn.preprocessing import LabelEncoder
+
 def clean_dataset(df , df_train, df_val,  df_test):
     """
     Applique les choix VALIDÉS lors de l'EDA.
@@ -15,6 +17,13 @@ def clean_dataset(df , df_train, df_val,  df_test):
     df_val = df_val[df_val["style_name"].isin(valid_styles)]
     df_test = df_test[df_test["style_name"].isin(valid_styles)]
 
+    le = LabelEncoder()
+
+    df_train["style"] = le.fit_transform(df_train["style"])
+    df_val["style"]   = le.transform(df_val["style"])
+    df_test["style"]  = le.transform(df_test["style"])
+    df["style"]      = le.transform(df["style"])
+    
     # autres transfo si on a envie de faire du nettoyage
 
     return df, df_train, df_val, df_test
