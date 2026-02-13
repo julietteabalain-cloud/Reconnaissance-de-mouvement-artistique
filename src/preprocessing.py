@@ -16,6 +16,9 @@ def clean_dataset(df , df_train, df_val,  df_test):
     df_train = df_train[df_train["style_name"].isin(valid_styles)]
     df_val = df_val[df_val["style_name"].isin(valid_styles)]
     df_test = df_test[df_test["style_name"].isin(valid_styles)]
+    df_train["style_original"] = df_train["style"]
+    df_val["style_original"]   = df_val["style"]
+    df_test["style_original"]  = df_test["style"]
 
     le = LabelEncoder()
 
