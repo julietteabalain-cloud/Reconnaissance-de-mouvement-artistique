@@ -16,17 +16,13 @@ def clean_dataset(df , df_train, df_val,  df_test):
     df_train = df_train[df_train["style_name"].isin(valid_styles)]
     df_val = df_val[df_val["style_name"].isin(valid_styles)]
     df_test = df_test[df_test["style_name"].isin(valid_styles)]
-    df_train["style_original"] = df_train["style"]
-    df_val["style_original"]   = df_val["style"]
-    df_test["style_original"]  = df_test["style"]
-    df["style_original"]      = df["style"]
 
     le = LabelEncoder()
 
-    df_train["style"] = le.fit_transform(df_train["style"])
-    df_val["style"]   = le.transform(df_val["style"])
-    df_test["style"]  = le.transform(df_test["style"])
-    df["style"]      = le.transform(df["style"])
+    df_train["style_encoded"] = le.fit_transform(df_train["style"])
+    df_val["style_encoded"]   = le.transform(df_val["style"])
+    df_test["style_encoded"]  = le.transform(df_test["style"])
+    df["style_encoded"]      = le.transform(df["style"])
     
     # autres transfo si on a envie de faire du nettoyage
 
