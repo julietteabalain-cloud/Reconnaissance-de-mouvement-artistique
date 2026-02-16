@@ -6,7 +6,10 @@ from scipy.stats import entropy
 class FrequencyAnalyzer:
     """
     Analyseur de caractéristiques fréquentielles et texturales pour les styles artistiques.
-    Inclut Fourier 2D, Filtrage multi-échelle et Banc de filtres de Gabor.
+    
+    Cette classe centralise les algorithmes de traitement du signal (Fourier, Filtres passe-haut/passe-bas, Gabor) 
+    pour transformer une image en un vecteur de descripteurs statistiques utilisables 
+    par un modèle de Machine Learning.
     """
 
     def __init__(self, target_size=(512, 512)):
@@ -138,7 +141,14 @@ class FrequencyAnalyzer:
     def extract_features_from_image(self, img_np):
         """
         Regroupe toutes les extractions mathématiques pour une image.
-        Note : On passe l'image déjà convertie en numpy pour gagner du temps.
+        Args:
+            img_np (np.ndarray): Image en niveaux de gris pré-traitée (Array Numpy).
+
+        Returns:
+            dict: Un dictionnaire fusionné contenant l'ensemble des descripteurs :
+                - Métriques de Fourier
+                - Métriques multi-échelles
+                - Métriques de Gabor 
         """
         # 1. Fourier
         f_shift, _, f_metrics = self.get_fourier_data(img_np)
