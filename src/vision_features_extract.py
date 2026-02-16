@@ -64,6 +64,7 @@ from tqdm import tqdm
 def aggregate_histograms_by_style(
     df,
     load_image_fn,
+    DATA_DIR,
     mag_bins=20,
     ori_bins=18,
     max_images_per_style=200
@@ -90,7 +91,7 @@ def aggregate_histograms_by_style(
             continue
 
         try:
-            img = load_image_fn(row)
+            img = load_image_fn(row, DATA_DIR)
             magnitude, orientation = compute_sobel_gradients(img)
             mag_hist, ori_hist = gradient_histograms(
                 magnitude,
@@ -195,6 +196,7 @@ import random
 def plot_sobel_examples(
     df,
     load_image_fn,
+    DATA_DIR,
     styles,
     n_images_per_style=3,
 ):
@@ -225,7 +227,7 @@ def plot_sobel_examples(
         )
 
         for j, (_, row) in enumerate(samples.iterrows()):
-            img = load_image_fn(row)
+            img = load_image_fn(row,DATA_DIR)
             magnitude, _ = compute_sobel_gradients(img)
 
             # Image originale
@@ -319,32 +321,36 @@ def extract_features(img: Image.Image):
 
     return features
 
-def extract_features_dataset(df, load_image_fn):
+
+def extract_features_dataset(df, load_image_fn, DATA_DIR):
     """
     Extract features for all images in the dataframe.
     """
-
     X = []
     y = []
+    filenames = []
 
     for _, row in tqdm(df.iterrows(), total=len(df)):
         try:
-            img = load_image_fn(row)
-            
+            img = load_image_fn(row,DATA_DIR)
             feat = extract_features(img)
 
             X.append(feat)
             y.append(row["style_name"])
+            filenames.append(row["filename"])
 
         except Exception:
             continue
 
-    X = np.stack(X)  
+    X = np.stack(X)
     y = np.array(y)
-    print("Nombre d'images :", X.shape[0])
-    print("Dimension du vecteur de features :", X.shape[1])
 
-    return X, y
+    return X, y, filenames
+
+
+
+
+############ Analyse des distances entre styles ############
 
 from scipy.spatial.distance import pdist, squareform
 import pandas as pd
@@ -397,3 +403,63 @@ def pca_style_features(X, y, n_components=2):
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
+
+
+############ PCA pour entrainement du SVM ############
+import joblib
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+import os
+def apply_pca_for_model(X_train, X_val=None, X_test=None, n_components=300):
+    
+    # Scaling
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+
+    if X_val is not None:
+        X_val_scaled = scaler.transform(X_val)
+    if X_test is not None:
+        X_test_scaled = scaler.transform(X_test)
+
+    # PCA
+    pca = PCA(n_components=n_components)
+    X_train_pca = pca.fit_transform(X_train_scaled)
+
+    if X_val is not None:
+        X_val_pca = pca.transform(X_val_scaled)
+    if X_test is not None:
+        X_test_pca = pca.transform(X_test_scaled)
+    os.makedirs("/content/drive/MyDrive/models", exist_ok=True)
+
+    joblib.dump(scaler, "/content/drive/MyDrive/models/scaler.pkl")
+    joblib.dump(pca, "/content/drive/MyDrive/models/pca.pkl")
+    print("Variance expliquée totale :", np.sum(pca.explained_variance_ratio_))
+
+    return {
+        "X_train": X_train_pca,
+        "X_val": X_val_pca if X_val is not None else None,
+        "X_test": X_test_pca if X_test is not None else None,
+        "scaler": scaler,
+        "pca": pca
+    }
+
+def build_pca_dataframe(X_pca, df_split, split_name):
+    
+    n_components = X_pca.shape[1]
+    feature_columns = [f"pc_{i}" for i in range(n_components)]
+    
+    df_features = pd.DataFrame(X_pca, columns=feature_columns)
+    
+    df_meta = pd.DataFrame({
+        "filename": df_split["filename"].values,
+        "split": split_name,
+        "style": df_split["style"].values,
+        "style_name": df_split["style_name"].values
+    })
+    
+    df_final = pd.concat([df_meta.reset_index(drop=True),
+                          df_features.reset_index(drop=True)], axis=1)
+    
+    return df_final
