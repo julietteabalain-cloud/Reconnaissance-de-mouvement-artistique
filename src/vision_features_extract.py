@@ -380,69 +380,116 @@ def heatmap_style_distances(dist_df):
     plt.tight_layout()
     plt.show()
 
-from sklearn.decomposition import PCA
-
-def pca_style_features(X, y, n_components=2):
-
-    df_feat = pd.DataFrame(X)
-    df_feat["style"] = y
-    mean_by_style = df_feat.groupby("style").mean()
-
-    pca = PCA(n_components=n_components)
-    X_pca = pca.fit_transform(mean_by_style.values)
-
-    plt.figure(figsize=(10, 8))
-    for i, style in enumerate(mean_by_style.index):
-        plt.scatter(X_pca[i, 0], X_pca[i, 1], label=style)
-        plt.text(X_pca[i, 0], X_pca[i, 1], style)
-
-    plt.title("PCA des features par style (HOG + couleurs)")
-    plt.xlabel("Composante principale 1")
-    plt.ylabel("Composante principale 2")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-
-
-############ PCA pour entrainement du SVM ############
+from sklearn.decomposition import PCA   
 import joblib
-
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
 import os
-def apply_pca_for_model(X_train, X_val=None, X_test=None, n_components=300):
-    
-    # Scaling
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
+
+def apply_block_pca_for_model(
+    X_train,
+    X_val=None,
+    X_test=None,
+    hog_dim=6084,
+    hsv_dim=4096,
+    lab_dim=4096,
+    hog_pca_dim=150,
+    hsv_pca_dim=75,
+    lab_pca_dim=75
+):
+
+
+    X_train_hog = X_train[:, :hog_dim]
+    X_train_hsv = X_train[:, hog_dim:hog_dim+hsv_dim]
+    X_train_lab = X_train[:, hog_dim+hsv_dim:]
 
     if X_val is not None:
-        X_val_scaled = scaler.transform(X_val)
-    if X_test is not None:
-        X_test_scaled = scaler.transform(X_test)
+        X_val_hog = X_val[:, :hog_dim]
+        X_val_hsv = X_val[:, hog_dim:hog_dim+hsv_dim]
+        X_val_lab = X_val[:, hog_dim+hsv_dim:]
 
-    # PCA
-    pca = PCA(n_components=n_components)
-    X_train_pca = pca.fit_transform(X_train_scaled)
+    if X_test is not None:
+        X_test_hog = X_test[:, :hog_dim]
+        X_test_hsv = X_test[:, hog_dim:hog_dim+hsv_dim]
+        X_test_lab = X_test[:, hog_dim+hsv_dim:]
+
+    scaler_hog = StandardScaler().fit(X_train_hog)
+    scaler_hsv = StandardScaler().fit(X_train_hsv)
+    scaler_lab = StandardScaler().fit(X_train_lab)
+
+    X_train_hog = scaler_hog.transform(X_train_hog)
+    X_train_hsv = scaler_hsv.transform(X_train_hsv)
+    X_train_lab = scaler_lab.transform(X_train_lab)
 
     if X_val is not None:
-        X_val_pca = pca.transform(X_val_scaled)
+        X_val_hog = scaler_hog.transform(X_val_hog)
+        X_val_hsv = scaler_hsv.transform(X_val_hsv)
+        X_val_lab = scaler_lab.transform(X_val_lab)
+
     if X_test is not None:
-        X_test_pca = pca.transform(X_test_scaled)
+        X_test_hog = scaler_hog.transform(X_test_hog)
+        X_test_hsv = scaler_hsv.transform(X_test_hsv)
+        X_test_lab = scaler_lab.transform(X_test_lab)
+
+
+    pca_hog = PCA(n_components=hog_pca_dim).fit(X_train_hog)
+    pca_hsv = PCA(n_components=hsv_pca_dim).fit(X_train_hsv)
+    pca_lab = PCA(n_components=lab_pca_dim).fit(X_train_lab)
+
+    X_train_hog_pca = pca_hog.transform(X_train_hog)
+    X_train_hsv_pca = pca_hsv.transform(X_train_hsv)
+    X_train_lab_pca = pca_lab.transform(X_train_lab)
+
+    if X_val is not None:
+        X_val_hog_pca = pca_hog.transform(X_val_hog)
+        X_val_hsv_pca = pca_hsv.transform(X_val_hsv)
+        X_val_lab_pca = pca_lab.transform(X_val_lab)
+
+    if X_test is not None:
+        X_test_hog_pca = pca_hog.transform(X_test_hog)
+        X_test_hsv_pca = pca_hsv.transform(X_test_hsv)
+        X_test_lab_pca = pca_lab.transform(X_test_lab)
+
+
+    X_train_final = np.concatenate(
+        [X_train_hog_pca, X_train_hsv_pca, X_train_lab_pca],
+        axis=1
+    )
+
+    if X_val is not None:
+        X_val_final = np.concatenate(
+            [X_val_hog_pca, X_val_hsv_pca, X_val_lab_pca],
+            axis=1
+        )
+    else:
+        X_val_final = None
+
+    if X_test is not None:
+        X_test_final = np.concatenate(
+            [X_test_hog_pca, X_test_hsv_pca, X_test_lab_pca],
+            axis=1
+        )
+    else:
+        X_test_final = None
+
+
     os.makedirs("/content/drive/MyDrive/models", exist_ok=True)
 
-    joblib.dump(scaler, "/content/drive/MyDrive/models/scaler.pkl")
-    joblib.dump(pca, "/content/drive/MyDrive/models/pca.pkl")
-    print("Variance expliquée totale :", np.sum(pca.explained_variance_ratio_))
+    joblib.dump(scaler_hog, "/content/drive/MyDrive/models/scaler_hog.pkl")
+    joblib.dump(scaler_hsv, "/content/drive/MyDrive/models/scaler_hsv.pkl")
+    joblib.dump(scaler_lab, "/content/drive/MyDrive/models/scaler_lab.pkl")
+
+    joblib.dump(pca_hog, "/content/drive/MyDrive/models/pca_hog.pkl")
+    joblib.dump(pca_hsv, "/content/drive/MyDrive/models/pca_hsv.pkl")
+    joblib.dump(pca_lab, "/content/drive/MyDrive/models/pca_lab.pkl")
+
+    print("Variance HOG :", np.sum(pca_hog.explained_variance_ratio_))
+    print("Variance HSV :", np.sum(pca_hsv.explained_variance_ratio_))
+    print("Variance LAB :", np.sum(pca_lab.explained_variance_ratio_))
 
     return {
-        "X_train": X_train_pca,
-        "X_val": X_val_pca if X_val is not None else None,
-        "X_test": X_test_pca if X_test is not None else None,
-        "scaler": scaler,
-        "pca": pca
+        "X_train": X_train_final,
+        "X_val": X_val_final,
+        "X_test": X_test_final
     }
 
 def build_pca_dataframe(X_pca, df_split, split_name):
