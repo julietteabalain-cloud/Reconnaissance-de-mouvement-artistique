@@ -494,15 +494,16 @@ def apply_block_pca_for_model(
 
 def build_pca_dataframe(X_pca, df_split, split_name):
     
-    n_components = X_pca.shape[1]
-    feature_columns = [f"pc_{i}" for i in range(n_components)]
-    
+    hog_cols = [f"hog_pc_{i}" for i in range(150)]
+    hsv_cols = [f"hsv_pc_{i}" for i in range(75)]
+    lab_cols = [f"lab_pc_{i}" for i in range(75)]
+
+    feature_columns = hog_cols + hsv_cols + lab_cols
     df_features = pd.DataFrame(X_pca, columns=feature_columns)
-    
+
     df_meta = pd.DataFrame({
         "filename": df_split["filename"].values,
         "split": split_name,
-        "style": df_split["style"].values,
         "style_name": df_split["style_name"].values
     })
     
