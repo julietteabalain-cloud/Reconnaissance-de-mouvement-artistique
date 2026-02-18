@@ -379,7 +379,243 @@ def heatmap_style_distances(dist_df):
     plt.title("Matrice de distance entre styles (HOG + couleurs)")
     plt.tight_layout()
     plt.show()
+################## PALETTES DE COULEURS ####################
 
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from tqdm import tqdm
+
+
+def compute_style_palette(df, style_name, load_image_fn, DATA_DIR,
+                          n_colors=5, resize=(150,150)):
+    """
+    Compute dominant color palette for a given style.
+    """
+
+    df_style = df[df["style_name"] == style_name]
+
+    pixels = []
+
+    for _, row in tqdm(df_style.iterrows(), total=len(df_style)):
+        try:
+            img = load_image_fn(row, DATA_DIR)
+            img = cv2.resize(img, resize)
+
+            # Convert to Lab
+            img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+            img_lab = img_lab.reshape(-1, 3)
+
+            pixels.append(img_lab)
+
+        except Exception:
+            continue
+
+    pixels = np.vstack(pixels)
+
+    # KMeans clustering
+    kmeans = KMeans(n_clusters=n_colors, random_state=42, n_init=10)
+    kmeans.fit(pixels)
+
+    colors_lab = kmeans.cluster_centers_
+
+    # Convert back to RGB for display
+    colors_lab_uint8 = np.uint8(colors_lab.reshape(1, -1, 3))
+    colors_rgb = cv2.cvtColor(colors_lab_uint8, cv2.COLOR_LAB2RGB)[0]
+
+    return colors_rgb
+
+
+def display_palette(colors, style_name):
+
+    n_colors = len(colors)
+    palette = np.zeros((50, 50*n_colors, 3), dtype=np.uint8)
+
+    for i, color in enumerate(colors):
+        palette[:, i*50:(i+1)*50, :] = color
+
+    plt.figure(figsize=(8,2))
+    plt.imshow(palette)
+    plt.title(f"Palette dominante - {style_name}")
+    plt.axis("off")
+    plt.show()
+
+
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from tqdm import tqdm
+
+
+def compute_and_display_all_style_palettes(
+    df,
+    load_image_fn,
+    DATA_DIR,
+    n_colors=5,
+    resize=(150,150),
+    max_images_per_style=200
+):
+    """
+    Compute and display dominant color palettes for all styles.
+    """
+
+    styles = sorted(df["style_name"].unique())
+    style_palettes = {}
+
+    n_styles = len(styles)
+    fig, axes = plt.subplots(n_styles, 1, figsize=(8, 2*n_styles))
+
+    if n_styles == 1:
+        axes = [axes]
+
+    for idx, style in enumerate(styles):
+
+        df_style = df[df["style_name"] == style].head(max_images_per_style)
+
+        pixels = []
+
+        for _, row in tqdm(df_style.iterrows(),
+                           total=len(df_style),
+                           desc=f"{style}",
+                           leave=False):
+
+            try:
+                img = load_image_fn(row, DATA_DIR)
+                img = cv2.resize(img, resize)
+
+                img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+                img_lab = img_lab.reshape(-1, 3)
+
+                # échantillonnage pour réduire mémoire
+                if img_lab.shape[0] > 2000:
+                    idx_sample = np.random.choice(
+                        img_lab.shape[0], 2000, replace=False
+                    )
+                    img_lab = img_lab[idx_sample]
+
+                pixels.append(img_lab)
+
+            except:
+                continue
+
+        pixels = np.vstack(pixels)
+
+        kmeans = KMeans(n_clusters=n_colors, random_state=42, n_init=10)
+        kmeans.fit(pixels)
+
+        colors_lab = kmeans.cluster_centers_
+
+        # Convertir vers RGB
+        colors_lab_uint8 = np.uint8(colors_lab.reshape(1, -1, 3))
+        colors_rgb = cv2.cvtColor(colors_lab_uint8, cv2.COLOR_LAB2RGB)[0]
+
+        style_palettes[style] = colors_rgb
+
+        # Création bande palette
+        palette_img = np.zeros((50, 50*n_colors, 3), dtype=np.uint8)
+        for i, color in enumerate(colors_rgb):
+            palette_img[:, i*50:(i+1)*50, :] = color
+
+        axes[idx].imshow(palette_img)
+        axes[idx].set_title(style)
+        axes[idx].axis("off")
+
+    plt.tight_layout()
+    plt.show()
+
+    return style_palettes
+
+
+def compute_style_hsv_stats(df, style_name, load_image_fn, DATA_DIR):
+
+    df_style = df[df["style_name"] == style_name]
+
+    h_vals, s_vals, v_vals = [], [], []
+
+    for _, row in df_style.iterrows():
+        try:
+            img = load_image_fn(row, DATA_DIR)
+            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+            h_vals.append(hsv[:,:,0].mean())
+            s_vals.append(hsv[:,:,1].mean())
+            v_vals.append(hsv[:,:,2].mean())
+
+        except:
+            continue
+
+    return {
+        "mean_hue": np.mean(h_vals),
+        "mean_saturation": np.mean(s_vals),
+        "mean_value": np.mean(v_vals)
+    }
+
+from scipy.spatial.distance import pdist, squareform
+
+
+def compute_hsv_stats_all_styles(df, load_image_fn, DATA_DIR):
+    """
+    Compute mean HSV statistics for each style.
+    Returns dict: {style: [mean_H, mean_S, mean_V]}
+    """
+
+    styles = df["style_name"].unique()
+    style_vectors = {}
+
+    for style in styles:
+        df_style = df[df["style_name"] == style]
+
+        h_vals, s_vals, v_vals = [], [], []
+
+        for _, row in tqdm(df_style.iterrows(), total=len(df_style), leave=False):
+            try:
+                img = load_image_fn(row, DATA_DIR)
+                hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+                h_vals.append(hsv[:,:,0].mean())
+                s_vals.append(hsv[:,:,1].mean())
+                v_vals.append(hsv[:,:,2].mean())
+
+            except:
+                continue
+
+        style_vectors[style] = [
+            np.mean(h_vals),
+            np.mean(s_vals),
+            np.mean(v_vals)
+        ]
+
+    return style_vectors
+
+def plot_style_distance_heatmap(style_vectors, title="Distance HSV entre styles"):
+
+    styles = list(style_vectors.keys())
+    vectors = np.array(list(style_vectors.values()))
+
+    # Distance euclidienne
+    dist_matrix = squareform(pdist(vectors, metric="euclidean"))
+
+    plt.figure(figsize=(10,8))
+    sns.heatmap(
+        dist_matrix,
+        xticklabels=styles,
+        yticklabels=styles,
+        cmap="viridis",
+        annot=True,
+        fmt=".2f"
+    )
+    plt.title(title)
+    plt.xticks(rotation=45)
+    plt.yticks(rotation=0)
+    plt.tight_layout()
+    plt.show()
+
+    return dist_matrix
+
+
+######### PCA ################333
 from sklearn.decomposition import PCA   
 import joblib
 from sklearn.preprocessing import StandardScaler
