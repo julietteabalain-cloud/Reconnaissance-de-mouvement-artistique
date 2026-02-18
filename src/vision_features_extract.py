@@ -400,18 +400,16 @@ def compute_style_palette(df, style_name, load_image_fn, DATA_DIR,
 
     for _, row in tqdm(df_style.iterrows(), total=len(df_style)):
         try:
-            print(row["filename"])
-            img = load_image_fn(row,DATA_DIR)
-            print(img is None)
-
             img = load_image_fn(row,DATA_DIR)
             img = cv2.resize(img, resize)
-
+            print(img.shape, "after resize")
             # Convert to Lab
             img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+            print(img_lab.shape, "after color convert")
             img_lab = img_lab.reshape(-1, 3)
-
+            print(img_lab.shape, "after reshape")
             pixels.append(img_lab)
+            print(len(pixels), "images processed for palette")
 
         except Exception:
             continue
