@@ -400,7 +400,7 @@ def compute_style_palette(df, style_name, load_image_fn, DATA_DIR,
 
     for _, row in tqdm(df_style.iterrows(), total=len(df_style)):
         try:
-            img = load_image_fn(row, DATA_DIR)
+            img = load_image_fn(row,DATA_DIR)
             img = cv2.resize(img, resize)
 
             # Convert to Lab
@@ -473,6 +473,9 @@ def compute_and_display_all_style_palettes(
     for idx, style in enumerate(styles):
 
         df_style = df[df["style_name"] == style].head(max_images_per_style)
+        print("Style:", style)
+        print("Nombre lignes df_style:", len(df_style))
+        print("Nombre tableaux accumulés:", len(pixels))
 
         pixels = []
 
@@ -483,6 +486,7 @@ def compute_and_display_all_style_palettes(
 
             try:
                 img = load_image_fn(row, DATA_DIR)
+                print(img.shape)
                 img = cv2.resize(img, resize)
 
                 img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
