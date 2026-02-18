@@ -401,6 +401,10 @@ def compute_style_palette(df, style_name, load_image_fn, DATA_DIR,
     for _, row in tqdm(df_style.iterrows(), total=len(df_style)):
         try:
             img = load_image_fn(row,DATA_DIR)
+            print(type(img))
+            print(img is None)
+            print(img.shape if isinstance(img, np.ndarray) else "not ndarray")
+
             img = cv2.resize(img, resize)
             print(img.shape, "after resize")
             # Convert to Lab
