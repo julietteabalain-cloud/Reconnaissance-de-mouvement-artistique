@@ -23,10 +23,13 @@ set_seed(42)
 
 # modele resnet : baseline 
 
-def get_resnet18(num_classes, device, freeze_backbone=True):
+def get_resnet18(num_classes, device, freeze_backbone=True, drop=False):
     model = models.resnet18(weights="IMAGENET1K_V1")
 
-    model.fc = nn.Linear(model.fc.in_features, num_classes)
+    model.fc = nn.Sequential(
+        nn.Dropout(0.2) if drop else nn.Identity(),
+        nn.Linear(model.fc.in_features, 512)
+    )
     model = model.to(device)
 
     if freeze_backbone:

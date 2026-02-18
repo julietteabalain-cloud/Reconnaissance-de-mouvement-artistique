@@ -71,7 +71,8 @@ def train_model(
                     criterion,
                     optimizer,
                     device,
-                    num_epochs
+                    num_epochs,
+                    early_stopping=None
                 ):
     """ Entraine le modèle complet : toute les epoch """
     history = {
@@ -80,6 +81,8 @@ def train_model(
         "val_loss": [],
         "val_acc": [],
     }
+    if early_stopping is not None:
+        best_model_state = None
 
     for epoch in range(num_epochs):
         print(f"\nEpoch {epoch+1}/{num_epochs}")
@@ -103,5 +106,18 @@ def train_model(
             f"Val Loss: {val_loss:.4f} | "
             f"Val Acc: {val_acc:.4f}"
         )
+
+        if early_stopping is not None:
+            early_stopping.step(val_loss)
+
+            if val_loss == early_stopping.best_loss:
+                best_model_state = model.state_dict()
+
+            if early_stopping.stop:
+                print("Early stopping triggered.")
+                break
+
+    if early_stopping is not None and best_model_state is not None:
+        model.load_state_dict(best_model_state)
 
     return history
