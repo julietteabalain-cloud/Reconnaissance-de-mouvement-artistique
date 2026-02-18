@@ -400,6 +400,10 @@ def compute_style_palette(df, style_name, load_image_fn, DATA_DIR,
 
     for _, row in tqdm(df_style.iterrows(), total=len(df_style)):
         try:
+            print(row["filename"])
+            img = load_image_fn(row,DATA_DIR)
+            print(img is None)
+
             img = load_image_fn(row,DATA_DIR)
             img = cv2.resize(img, resize)
 
