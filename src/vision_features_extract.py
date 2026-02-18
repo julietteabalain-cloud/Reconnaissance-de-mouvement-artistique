@@ -393,7 +393,7 @@ def compute_style_palette(df, style_name, load_image_fn, DATA_DIR,
     """
     Compute dominant color palette for a given style.
     """
-
+    print(f"Computing palette for style: {style_name}")
     df_style = df[df["style_name"] == style_name]
 
     pixels = []
