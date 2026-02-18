@@ -442,13 +442,6 @@ def display_palette(colors, style_name):
     plt.show()
 
 
-import numpy as np
-import cv2
-import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
-from tqdm import tqdm
-
-
 def compute_and_display_all_style_palettes(
     df,
     load_image_fn,
@@ -473,13 +466,9 @@ def compute_and_display_all_style_palettes(
     for idx, style in enumerate(styles):
 
         df_style = df[df["style_name"] == style].head(max_images_per_style)
-        print("Style:", style)
-        print("Nombre lignes df_style:", len(df_style))
-        print("Nombre tableaux accumulés:", len(pixels))
 
         pixels = []
         for _, row in tqdm(df_style.iterrows(), total=len(df_style)):
-
             try:
                 img = load_image_fn(row, DATA_DIR)
                 print(img.shape)
