@@ -478,11 +478,7 @@ def compute_and_display_all_style_palettes(
         print("Nombre tableaux accumulés:", len(pixels))
 
         pixels = []
-
-        for _, row in tqdm(df_style.iterrows(),
-                           total=len(df_style),
-                           desc=f"{style}",
-                           leave=False):
+        for _, row in tqdm(df_style.iterrows(), total=len(df_style)):
 
             try:
                 img = load_image_fn(row, DATA_DIR)
