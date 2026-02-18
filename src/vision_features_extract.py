@@ -403,14 +403,10 @@ def compute_style_palette(df, style_name, load_image_fn, DATA_DIR,
             img = load_image_fn(row,DATA_DIR)
             img = np.array(img)
             img = cv2.resize(img, resize)
-            print(img.shape, "after resize")
             # Convert to Lab
             img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-            print(img_lab.shape, "after color convert")
             img_lab = img_lab.reshape(-1, 3)
-            print(img_lab.shape, "after reshape")
             pixels.append(img_lab)
-            print(len(pixels), "images processed for palette")
 
         except Exception:
             continue
@@ -474,7 +470,7 @@ def compute_and_display_all_style_palettes(
         for _, row in tqdm(df_style.iterrows(), total=len(df_style)):
             try:
                 img = load_image_fn(row, DATA_DIR)
-                print(img.shape)
+                img = np.array(img)
                 img = cv2.resize(img, resize)
 
                 img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -529,6 +525,7 @@ def compute_style_hsv_stats(df, style_name, load_image_fn, DATA_DIR):
     for _, row in df_style.iterrows():
         try:
             img = load_image_fn(row, DATA_DIR)
+            img = np.array(img)
             hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
             h_vals.append(hsv[:,:,0].mean())
@@ -546,7 +543,7 @@ def compute_style_hsv_stats(df, style_name, load_image_fn, DATA_DIR):
 
 from scipy.spatial.distance import pdist, squareform
 
-
+import seaborn as sns
 def compute_hsv_stats_all_styles(df, load_image_fn, DATA_DIR):
     """
     Compute mean HSV statistics for each style.
@@ -564,6 +561,7 @@ def compute_hsv_stats_all_styles(df, load_image_fn, DATA_DIR):
         for _, row in tqdm(df_style.iterrows(), total=len(df_style), leave=False):
             try:
                 img = load_image_fn(row, DATA_DIR)
+                img = np.array(img)
                 hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
                 h_vals.append(hsv[:,:,0].mean())
