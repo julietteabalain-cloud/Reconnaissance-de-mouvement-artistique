@@ -3,9 +3,34 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
 import seaborn as sns
 
+########## Evaluation classique : loss et accuracy sur le validation set
+
+def evaluate_model(model, loader, device):
+    model.eval()
+    all_preds = []
+    all_labels = []
+
+    with torch.no_grad():
+        for images, labels in loader:
+            images = images.to(device)
+            labels = labels.to(device)
+
+            outputs = model(images)
+
+            _, preds = torch.max(outputs, 1)
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+    
+    acc = accuracy_score(all_labels, all_preds)
+    cm = confusion_matrix(all_labels, all_preds)
+    report = classification_report(all_labels, all_preds, digits=4)
+    return acc, cm, report
+
+
+#######" Fonctions pour la matrice de confusion et l'accuracy par style"
 
 @torch.no_grad()
 def compute_confusion_matrix(model, loader, device, class_names):
