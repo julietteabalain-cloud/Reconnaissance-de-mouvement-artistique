@@ -21,7 +21,7 @@ class ArtDataset(Dataset):
 
         image = Image.open(img_path).convert("RGB")
 
-        label = row["style"]  
+        label = row["style_encoded"]  
         
         if self.transform:
             image = self.transform(image)

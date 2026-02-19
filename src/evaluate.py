@@ -21,8 +21,13 @@ def evaluate_model(model, loader, device):
             outputs = model(images)
 
             _, preds = torch.max(outputs, 1)
-            all_preds.extend(preds.cpu().numpy())
-            all_labels.extend(labels.cpu().numpy())
+
+            encoded_to_style = dict(zip(loader.dataset.df["style_encoded"], loader.dataset.df["style_name"]))
+            pred_names = [encoded_to_style[pred.item()] for pred in preds]
+            label_names = [encoded_to_style[label.item()] for label in labels]
+
+            all_preds.extend(pred_names)
+            all_labels.extend(label_names)
     
     acc = accuracy_score(all_labels, all_preds)
     cm = confusion_matrix(all_labels, all_preds)
@@ -45,9 +50,11 @@ def compute_confusion_matrix(model, loader, device, class_names):
 
         outputs = model(images)
         _, preds = torch.max(outputs, 1)
-
-        all_preds.extend(preds.cpu().numpy())
-        all_labels.extend(labels.cpu().numpy())
+        encoded_to_style = dict(zip(loader.dataset.df["style_encoded"], loader.dataset.df["style_name"]))
+        pred_names = [encoded_to_style[pred.item()] for pred in preds]
+        label_names = [encoded_to_style[label.item()] for label in labels]
+        all_preds.extend(pred_names)
+        all_labels.extend(label_names)
 
     cm = confusion_matrix(all_labels, all_preds)
 
@@ -95,7 +102,7 @@ def accuracy_per_class(model, loader, device, class_names):
             total_per_class[label.item()] += 1
             if label == pred:
                 correct_per_class[label.item()] += 1
-
+        
     accuracy_per_class = correct_per_class / total_per_class
 
     return accuracy_per_class
