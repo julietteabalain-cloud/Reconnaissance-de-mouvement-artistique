@@ -161,3 +161,53 @@ class FrequencyAnalyzer:
         
         # Fusion des 3 dictionnaires
         return {**f_metrics, **m_metrics, **g_metrics}
+
+
+########## Transformation des images ###########
+
+import torch
+import torchvision.transforms as transforms
+import torchvision.transforms.functional as F
+import cv2
+import numpy as np
+
+class LowFrequencyTransform:
+    def __init__(self, kernel_size=9, sigma=2):
+        self.kernel_size = kernel_size
+        self.sigma = sigma
+
+    def __call__(self, img):
+        # img est un PIL Image
+        img_np = np.array(img)
+
+        low = cv2.GaussianBlur(
+            img_np,
+            (self.kernel_size, self.kernel_size),
+            self.sigma
+        )
+
+        return F.to_pil_image(low)
+
+
+
+class HighFrequencyTransform:
+    def __init__(self, kernel_size=9, sigma=2):
+        self.kernel_size = kernel_size
+        self.sigma = sigma
+
+    def __call__(self, img):
+        img_np = np.array(img)
+
+        low = cv2.GaussianBlur(
+            img_np,
+            (self.kernel_size, self.kernel_size),
+            self.sigma
+        )
+
+        high = img_np.astype(np.float32) - low.astype(np.float32)
+
+        # Recentre pour rester dans 0-255
+        high = high + 127
+        high = np.clip(high, 0, 255).astype(np.uint8)
+
+        return F.to_pil_image(high)

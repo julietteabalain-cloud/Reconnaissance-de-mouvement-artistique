@@ -97,11 +97,13 @@ def accuracy_per_class(model, loader, device, class_names):
 
         outputs = model(images)
         _, preds = torch.max(outputs, 1)
-
-        for label, pred in zip(labels, preds):
-            total_per_class[label.item()] += 1
+        encoded_to_style = dict(zip(loader.dataset.df["style_encoded"], loader.dataset.df["style_name"]))
+        pred_names = [encoded_to_style[pred.item()] for pred in preds]
+        label_names = [encoded_to_style[label.item()] for label in labels]
+        for label, pred in zip(label_names, pred_names):
+            total_per_class[class_names.index(label)] += 1
             if label == pred:
-                correct_per_class[label.item()] += 1
+                correct_per_class[class_names.index(label)] += 1
         
     accuracy_per_class = correct_per_class / total_per_class
 
@@ -110,7 +112,6 @@ def accuracy_per_class(model, loader, device, class_names):
 def visualize_accuracy_per_style(results): 
     styles = [x[0] for x in results]
     accs = [x[1] for x in results]
-
     plt.figure(figsize=(10, 8))
     plt.barh(styles, accs)
     plt.xlabel("Accuracy")
