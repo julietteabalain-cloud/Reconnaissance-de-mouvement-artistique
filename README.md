@@ -5,6 +5,7 @@ et deep learning, à partir d'un sous dataset de WikiArt.
 
 ## Structure du projet
 
+```
 ├── notebooks/
 │   ├── 1_RV-DL_exploration.ipynb         # Exploration et analyse du dataset
 │   ├── 2_RV_Analyse_Frequentielle.ipynb  # Analyse fréquentielle multi-échelle
@@ -36,6 +37,7 @@ et deep learning, à partir d'un sous dataset de WikiArt.
     └── CSV/                         
          ├── dataset_vision_features.csv   # Caractéristiques issues des techniques de vision
          └── final_frequency_features.csv  # Caractéristiques issues de l'analyse fréquentielle     
+```
 
 ## Pipeline
 
