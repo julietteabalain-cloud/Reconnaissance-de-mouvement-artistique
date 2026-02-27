@@ -59,6 +59,14 @@ def get_model(model_name, num_classes=23, dropout_p=0.2, freeze_backbone=True):
             nn.Linear(in_features, num_classes)
         )
 
+    elif model_name == "mobilenet_v3_small":
+        model = models.mobilenet_v3_small(weights=models.MobileNet_V3_Small_Weights.IMAGENET1K_V1)
+        in_features = model.classifier[0].in_features
+        model.classifier = nn.Sequential(
+            nn.Dropout(p=dropout_p),
+            nn.Linear(in_features, num_classes)
+        )
+
     elif model_name == "efficientnet_b0":
         model = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
         in_features = model.classifier[1].in_features
