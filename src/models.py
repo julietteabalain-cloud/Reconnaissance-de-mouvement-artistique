@@ -51,6 +51,14 @@ def get_model(model_name, num_classes=23, dropout_p=0.2, freeze_backbone=True):
             nn.Linear(in_features, num_classes)
         )
 
+    elif model_name == "resnext50":
+        model = models.resnext50_32x4d(weights=models.ResNext50_32X4D_Weights.IMAGENET1K_V1)
+        in_features = model.fc.in_features
+        model.fc = nn.Sequential(
+            nn.Dropout(p=dropout_p),
+            nn.Linear(in_features, num_classes)
+        )
+
     elif model_name == "mobilenet_v2":
         model = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.IMAGENET1K_V1)
         in_features = model.classifier[1].in_features
@@ -61,6 +69,14 @@ def get_model(model_name, num_classes=23, dropout_p=0.2, freeze_backbone=True):
 
     elif model_name == "mobilenet_v3_small":
         model = models.mobilenet_v3_small(weights=models.MobileNet_V3_Small_Weights.IMAGENET1K_V1)
+        in_features = model.classifier[0].in_features
+        model.classifier = nn.Sequential(
+            nn.Dropout(p=dropout_p),
+            nn.Linear(in_features, num_classes)
+        )
+
+    elif model_name == "mobilenet_v3_large":
+        model = models.mobilenet_v3_large(weights=models.MobileNet_V3_Large_Weights.IMAGENET1K_V1)
         in_features = model.classifier[0].in_features
         model.classifier = nn.Sequential(
             nn.Dropout(p=dropout_p),
@@ -92,7 +108,7 @@ def get_model(model_name, num_classes=23, dropout_p=0.2, freeze_backbone=True):
             param.requires_grad = False
         
         # Unfreeze classifier layer
-        if "resnet" in model_name:
+        if "resnet" in model_name or "resnext" in model_name:
             for param in model.fc.parameters():
                 param.requires_grad = True
         else:
