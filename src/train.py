@@ -72,7 +72,8 @@ def train_model(
                     optimizer,
                     device,
                     num_epochs,
-                    early_stopping=None
+                    early_stopping=None,
+                    scheduler=None
                 ):
     """ Entraine le modèle complet : toute les epoch """
     history = {
@@ -106,6 +107,12 @@ def train_model(
             f"Val Loss: {val_loss:.4f} | "
             f"Val Acc: {val_acc:.4f}"
         )
+
+        #Ajout scheduler 
+        if scheduler is not None:
+            scheduler.step(val_loss)
+            current_lr = optimizer.param_groups[0]['lr']
+            print(f"Current Learning Rate: {current_lr}")
 
         if early_stopping is not None:
             early_stopping.step(val_loss)
