@@ -28,6 +28,7 @@ class ArtDataset(Dataset):
 
         return image, label
 
+#Pour le modèle multibranches :
 
 class ArtDatasetMultiBranch(Dataset):
     """

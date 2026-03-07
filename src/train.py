@@ -215,7 +215,7 @@ def unfreeze_all(model):
     return model
 
 
-########################## APPROCHE HYBRIDE ##########################################
+########################## APPROCHE HYBRIDE #########################################
 # Pour l'entrainement de notre modèle avec la fusion des 3 branches (normal, haute-fréquence, basse-fréquence)
 
 def train_one_epoch_multibranch(model, loader, criterion, optimizer, device):

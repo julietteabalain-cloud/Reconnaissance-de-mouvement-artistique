@@ -120,7 +120,7 @@ def get_model(model_name, num_classes=23, dropout_p=0.2, freeze_backbone=True):
     return model
 
 
-########################### Approche hybride ###############################
+########################### Approche hybride ##############################
 # Pour le modèle avec fusion des 3 branches (normal, haute fréquence, basse fréquence)
 
 class MultiBranchResNet18(nn.Module):
