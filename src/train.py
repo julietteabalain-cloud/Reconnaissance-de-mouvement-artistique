@@ -222,7 +222,7 @@ def train_one_epoch_multibranch(model, loader, criterion, optimizer, device):
     model.train()
     total_loss, total_correct, total_samples = 0.0, 0, 0
 
-    for x_orig, x_hf, x_lf, labels in loader:
+    for x_orig, x_hf, x_lf, labels in tqdm(loader, leave=False):
         x_orig  = x_orig.to(device)
         x_hf    = x_hf.to(device)
         x_lf    = x_lf.to(device)
@@ -246,7 +246,7 @@ def validate_one_epoch_multibranch(model, loader, criterion, device):
     total_loss, total_correct, total_samples = 0.0, 0, 0
 
     with torch.no_grad():
-        for x_orig, x_hf, x_lf, labels in loader:
+        for x_orig, x_hf, x_lf, labels in tqdm(loader, leave=False):
             x_orig  = x_orig.to(device)
             x_hf    = x_hf.to(device)
             x_lf    = x_lf.to(device)
