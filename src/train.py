@@ -291,6 +291,8 @@ def train_model_multibranch(model, train_loader, val_loader, criterion,
         if val_loss < best_val_loss:
             best_val_loss    = val_loss
             best_model_state = copy.deepcopy(model.state_dict())
+            torch.save(best_model_state, "/content/drive/MyDrive/DeepLearning/multibranch_best.pth")
+            print("Meilleur modèle sauvegardé")
 
         if scheduler is not None:
             scheduler.step(val_loss)
