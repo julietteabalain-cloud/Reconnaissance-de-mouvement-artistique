@@ -21,7 +21,7 @@ def set_seed(seed=42):
 set_seed(42)
 
 
-# modele resnet : baseline 
+##################### Modele resnet : baseline #################################
 
 def get_resnet18(num_classes, device, freeze_backbone=True, drop=False):
     model = models.resnet18(weights="IMAGENET1K_V1")
@@ -40,6 +40,8 @@ def get_resnet18(num_classes, device, freeze_backbone=True, drop=False):
 
     return model
 
+
+################### Comparaison des architectures ################################
 
 def get_model(model_name, num_classes=23, dropout_p=0.2, freeze_backbone=True):
 
@@ -115,4 +117,53 @@ def get_model(model_name, num_classes=23, dropout_p=0.2, freeze_backbone=True):
             for param in model.classifier.parameters():
                 param.requires_grad = True
 
+    return model
+
+
+########################### Approche hybride ###############################
+# Pour le modèle avec fusion des 3 branches (normal, haute fréquence, basse fréquence)
+
+class MultiBranchResNet18(nn.Module):
+    def __init__(self, num_classes, drop=False):
+        super().__init__()
+        
+        # 3 backbones ResNet18 indépendants, chacun pré-entraîné
+        resnet_orig = models.resnet18(weights="IMAGENET1K_V1")
+        resnet_hf   = models.resnet18(weights="IMAGENET1K_V1")
+        resnet_lf   = models.resnet18(weights="IMAGENET1K_V1")
+        
+        # On retire la dernière couche FC de chaque branche
+        self.branch_orig = nn.Sequential(*list(resnet_orig.children())[:-1])
+        self.branch_hf   = nn.Sequential(*list(resnet_hf.children())[:-1])
+        self.branch_lf   = nn.Sequential(*list(resnet_lf.children())[:-1])
+        
+        self.classifier = nn.Sequential(
+            nn.Dropout(0.2) if drop else nn.Identity(),
+            nn.Linear(512 * 3, num_classes)
+        )
+
+    def forward(self, x_orig, x_hf, x_lf):
+        feat_orig = self.branch_orig(x_orig).flatten(1)  
+        feat_hf   = self.branch_hf(x_hf).flatten(1)      
+        feat_lf   = self.branch_lf(x_lf).flatten(1)     
+        
+        feat = torch.cat([feat_orig, feat_hf, feat_lf], dim=1)  
+        return self.classifier(feat)
+
+
+def get_multibranch_resnet18(num_classes, device, freeze_backbone=True, drop=False):
+    model = MultiBranchResNet18(num_classes=num_classes, drop=drop)
+    model = model.to(device)
+    
+    if freeze_backbone:
+        for branch in [model.branch_orig, model.branch_hf, model.branch_lf]:
+            for param in branch.parameters():
+                param.requires_grad = False
+        for param in model.classifier.parameters():
+            param.requires_grad = True
+    
+    total     = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Paramètres entraînables : {trainable:,} / {total:,} ({100*trainable/total:.1f}%)")
+    
     return model

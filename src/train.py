@@ -138,6 +138,8 @@ def train_model(
     return history
 
 
+########################## POUR LE FINETUNING ######################################
+
 def unfreeze_last_layers(model, architecture: str, num_blocks: int = 3):
     """
     Dégèle les derniers blocs d'un modèle pré-entraîné.
@@ -159,7 +161,6 @@ def unfreeze_last_layers(model, architecture: str, num_blocks: int = 3):
     arch = architecture.lower()
 
     if arch in ("resnet18", "resnet34"):
-        # ResNet : layer1, layer2, layer3, layer4 + fc
         feature_blocks = [
             model.layer1,
             model.layer2, 
@@ -192,7 +193,6 @@ def unfreeze_last_layers(model, architecture: str, num_blocks: int = 3):
         for param in block.parameters():
             param.requires_grad = True
 
-    # Toujours dégeler le classifier
     for param in classifier_params:
         param.requires_grad = True
 
@@ -213,3 +213,97 @@ def unfreeze_all(model):
     total = sum(p.numel() for p in model.parameters())
     print(f"Tous les paramètres dégelés : {total:,}")
     return model
+
+
+########################## APPROCHE HYBRIDE ##########################################
+# Pour l'entrainement de notre modèle avec la fusion des 3 branches (normal, haute-fréquence, basse-fréquence)
+
+def train_one_epoch_multibranch(model, loader, criterion, optimizer, device):
+    model.train()
+    total_loss, total_correct, total_samples = 0.0, 0, 0
+
+    for x_orig, x_hf, x_lf, labels in loader:
+        x_orig  = x_orig.to(device)
+        x_hf    = x_hf.to(device)
+        x_lf    = x_lf.to(device)
+        labels  = labels.to(device)
+
+        optimizer.zero_grad()
+        outputs = model(x_orig, x_hf, x_lf)
+        loss    = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        total_loss    += loss.item() * labels.size(0)
+        total_correct += (outputs.argmax(1) == labels).sum().item()
+        total_samples += labels.size(0)
+
+    return total_loss / total_samples, total_correct / total_samples
+
+
+def validate_one_epoch_multibranch(model, loader, criterion, device):
+    model.eval()
+    total_loss, total_correct, total_samples = 0.0, 0, 0
+
+    with torch.no_grad():
+        for x_orig, x_hf, x_lf, labels in loader:
+            x_orig  = x_orig.to(device)
+            x_hf    = x_hf.to(device)
+            x_lf    = x_lf.to(device)
+            labels  = labels.to(device)
+
+            outputs = model(x_orig, x_hf, x_lf)
+            loss    = criterion(outputs, labels)
+
+            total_loss    += loss.item() * labels.size(0)
+            total_correct += (outputs.argmax(1) == labels).sum().item()
+            total_samples += labels.size(0)
+
+    return total_loss / total_samples, total_correct / total_samples
+
+
+def train_model_multibranch(model, train_loader, val_loader, criterion,
+                             optimizer, device, num_epochs,
+                             early_stopping=None, scheduler=None):
+    history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": []}
+
+    best_val_loss   = float("inf")
+    best_model_state = None
+
+    for epoch in range(num_epochs):
+        print(f"\nEpoch {epoch+1}/{num_epochs}")
+
+        train_loss, train_acc = train_one_epoch_multibranch(
+            model, train_loader, criterion, optimizer, device
+        )
+        val_loss, val_acc = validate_one_epoch_multibranch(
+            model, val_loader, criterion, device
+        )
+
+        history["train_loss"].append(train_loss)
+        history["train_acc"].append(train_acc)
+        history["val_loss"].append(val_loss)
+        history["val_acc"].append(val_acc)
+
+        print(f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | "
+              f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f}")
+
+        if val_loss < best_val_loss:
+            best_val_loss    = val_loss
+            best_model_state = copy.deepcopy(model.state_dict())
+
+        if scheduler is not None:
+            scheduler.step(val_loss)
+            print(f"LR: {optimizer.param_groups[0]['lr']:.2e}")
+
+        if early_stopping is not None:
+            early_stopping.step(val_loss)
+            if early_stopping.stop:
+                print("Early stopping triggered.")
+                break
+
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
+        print(f"Meilleur modèle restauré (val_loss={best_val_loss:.4f})")
+
+    return history
