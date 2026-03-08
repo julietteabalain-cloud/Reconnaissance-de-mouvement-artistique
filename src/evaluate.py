@@ -277,10 +277,12 @@ def extract_embeddings(model, loader, device):
     hook = model.fc.register_forward_hook(hook_fn)
 
     with torch.no_grad():
-        for images, labels in loader:
+        for i, (images, labels) in enumerate(loader):
             images = images.to(device)
             _ = model(images)
             all_labels.extend(labels.numpy())
+            if i % 10 == 0:
+                print(f"  Batch {i}/{len(loader)}")
 
     hook.remove()
 
