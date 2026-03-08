@@ -316,12 +316,22 @@ def extract_embeddings_multibranch(model, loader, device):
     return all_embeddings, all_labels
 
 def plot_tsne(embeddings, labels, class_names, title, save_path=None):
+
     from sklearn.manifold import TSNE
+    from sklearn.decomposition import PCA
     import matplotlib.pyplot as plt
     import numpy as np
 
-    tsne = TSNE(n_components=2, perplexity=30, random_state=42, n_iter=1000)
-    reduced = tsne.fit_transform(embeddings)
+    # PCA d'abord :
+    print(f"  PCA...")
+    pca = PCA(n_components=50, random_state=42)
+    embeddings_pca = pca.fit_transform(embeddings)
+
+    # t-SNE ensuite :
+    print(f"  t-SNE...")
+    tsne = TSNE(n_components=2, perplexity=30, random_state=42, 
+                n_iter=1000, n_jobs=-1)  # n_jobs=-1 = tous les CPU
+    reduced = tsne.fit_transform(embeddings_pca)
     
     colors = plt.cm.tab20(np.linspace(0, 1, len(class_names)))
     
