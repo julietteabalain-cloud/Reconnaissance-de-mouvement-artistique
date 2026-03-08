@@ -109,6 +109,38 @@ def accuracy_per_class(model, loader, device, class_names):
 
     return accuracy_per_class
 
+
+@torch.no_grad()
+def accuracy_per_class_fast(model, loader, device, class_names):
+    """Version optimisée de accuracy_per_class — utilise un dict pour O(1)"""
+    model.eval()
+
+    correct_per_class = np.zeros(len(class_names))
+    total_per_class   = np.zeros(len(class_names))
+
+    encoded_to_style = dict(zip(
+        loader.dataset.df["style_encoded"],
+        loader.dataset.df["style_name"]
+    ))
+    style_to_idx = {style: idx for idx, style in enumerate(class_names)}
+
+    for images, labels in loader:
+        images = images.to(device)
+        labels = labels.to(device)
+
+        outputs = model(images)
+        _, preds = torch.max(outputs, 1)
+
+        for label, pred in zip(labels.cpu().numpy(), preds.cpu().numpy()):
+            style_name = encoded_to_style[label]
+            idx = style_to_idx[style_name]
+            total_per_class[idx] += 1
+            if label == pred:
+                correct_per_class[idx] += 1
+
+    return correct_per_class / total_per_class
+
+
 def visualize_accuracy_per_style(results): 
     styles = [x[0] for x in results]
     accs = [x[1] for x in results]
